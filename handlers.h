@@ -14,10 +14,8 @@
 void change_directory_callback(char* result, int sock) {
 
 	send_data("Enter path: ", strlen("Enter path: "), TRUE);
-	
-	char path[1024];
 
-	char *pt = pop_data(path, 1024);
+	char *pt = pop_data(1024);
 
 	int response = chdir(pt);
 

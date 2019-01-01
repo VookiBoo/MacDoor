@@ -116,7 +116,7 @@ print(LOGO)
 while True:
 	cmd = input("[MacDoor]> ")
 
-	if cmd == "sessions":
+	if cmd == "sessions" or cmd == "ls":
 		print("Active sessions:")
 
 		for session in sessions.keys():
