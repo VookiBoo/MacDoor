@@ -1,2 +1,2 @@
 all:
-	gcc backdoor.c utils.c
+	gcc backdoor.c utils.c -o backdoor

